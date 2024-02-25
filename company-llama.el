@@ -9,16 +9,11 @@
 (defcustom company-llama-api-url "http://127.0.0.1:8080/completion"
   "Llama API base url.")
 
-;; (defcustom company-llama-auth-token "INSERT YOUR AUTH TOKEN HERE"
-;;   "Llama API auth token.")
-
 (defun company-llama-fetch (prefix)
   "Fetch completion Candidates from Llama based on given PREFIX."
   (let ((url company-llama-api-url)
     (url-request-extra-headers
-      `(("Content-Type" . "application/json")
-        ;; ("Authorization" . ,(concat "Bearer " company-llama-auth-token))
-	))
+      `(("Content-Type" . "application/json")))
     (url-request-method "POST")
     (url-request-data
       (json-encode `(("prompt" . ,prefix)
