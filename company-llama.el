@@ -118,7 +118,7 @@
                              (if (funcall data-handler json)
                                  t
                                (setq done t)
-                               ;; TODO: cancel the request.
+                               (interrupt-process)
                                nil)))
                        (t
                         nil))
