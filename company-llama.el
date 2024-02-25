@@ -1,3 +1,5 @@
+;;; -*- lexical-binding: t -*-
+
 (require 'company)
 (require 'json)
 (require 'url)
@@ -9,7 +11,7 @@
 (defcustom company-llama-api-url "http://127.0.0.1:8080/completion"
   "Llama API base url.")
 
-(defun company-llama-fetch (prefix)
+(defun company-llama-fetch (prefix callback)
   "Fetch completion Candidates from Llama based on given PREFIX."
   (let ((url company-llama-api-url)
     (url-request-extra-headers
@@ -21,13 +23,15 @@
 		     ;; ("n_probs" . 5)
 		     ("temperature" . 0)
 		     ))))
-    (url-retrieve-synchronously url nil 5)))
+    (url-retrieve
+     url
+     (lambda (status)
+       (funcall callback)))))
 
-(defun company-llama-parse-response (buffer)
+(defun company-llama-parse-response ()
   "Parse the HTTP response in BUFFER."
-  (with-current-buffer buffer
-    (goto-char url-http-end-of-headers)
-    (json-read)))
+  (goto-char url-http-end-of-headers)
+  (json-read))
 
 (defun company-llama-candidate (data prefix)
   "Return a list of candidates from DATA."
@@ -41,10 +45,13 @@
    (concat prefix
 	   (cdr (assoc 'content data)))))
 
-(defun company-llama-candidates (prefix)
-  (let* ((response (company-llama-fetch prefix))
-            (data (company-llama-parse-response response)))
-       (company-llama-candidate data prefix)))
+(defun company-llama-candidates (callback prefix)
+  (company-llama-fetch
+   prefix
+   (lambda ()
+     (let ((data (company-llama-parse-response)))
+       (funcall callback
+		(company-llama-candidate data prefix))))))
 
 (defun company-llama-prefix ()
   (buffer-substring
@@ -60,7 +67,8 @@ COMMAND and ARG are as per the `company-backends' API."
   (cl-case command
     (interactive (company-begin-backend 'company-llama-backend))
     (prefix (company-llama-prefix))
-    (candidates (company-llama-candidates arg))))
+    (candidates (cons :async (lambda (callback)
+			       (company-llama-candidates callback arg))))))
 
 (add-to-list 'company-backends 'company-llama-backend)
 (setq company-backends (delete 'company-tabnine company-backends))
