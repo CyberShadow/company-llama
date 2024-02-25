@@ -71,12 +71,13 @@
       (setq s (concat s (car (car probs))))
       (setq probs nil))
 
-    (if probs
+    (if (string-empty-p s)
 	;; Report branches as one candidate each.
 	(mapcar
 	 (lambda (prob)
 	   (concat s (car prob)))
 	 probs)
+      ;; Otherwise, just return the common prefix.
       (list s))))
 
 (defun company-llama-candidates (callback)
