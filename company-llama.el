@@ -145,7 +145,7 @@ COMMAND and ARG are as per the `company-backends' API."
   (interactive (list 'interactive))
   (cl-case command
     (interactive (company-begin-backend 'company-llama-backend))
-    (prefix "")
+    (prefix (cons "" (length (company-llama--prefix))))
     (candidates (cons :async #'company-llama--candidates))
     (sorted t)))
 
