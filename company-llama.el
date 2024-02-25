@@ -40,6 +40,8 @@
       (add-hook 'after-change-functions after-change-hook nil t))))
 
 (defun company-llama--make-data-handler (candidates-callback)
+  "Return a lambda which accepts JSON packets from a streaming completion
+response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
   (let* ((s ""))
     (lambda (data)
       ;; (message "Got JSON: %S" data)
@@ -93,6 +95,7 @@
                               (list s)))))))
 
 (defun company-llama--make-url-event-handler (candidates-callback)
+  "Return a lambda which accepts events, as invoked by `company-llama--fetch'."
   (let* ((data-handler (company-llama--make-data-handler candidates-callback))
          last-pos done)
     (lambda (event-type)
@@ -128,6 +131,7 @@
            (setq done t)))))))
 
 (defun company-llama--prefix ()
+  "Return the prefix (context) used for the completion."
   (buffer-substring
    (max
     (point-min)
@@ -135,6 +139,7 @@
    (point)))
 
 (defun company-llama--candidates (candidates-callback)
+  "Company \"candidates\" command implementation."
   (company-llama--fetch
    (company-llama--prefix)
    (company-llama--make-url-event-handler candidates-callback)))
