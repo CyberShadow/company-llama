@@ -26,7 +26,8 @@
     (url-retrieve
      url
      (lambda (status)
-       (funcall callback)))))
+       (funcall callback))
+     nil t)))
 
 (defun company-llama-parse-response ()
   "Parse the HTTP response in BUFFER."
