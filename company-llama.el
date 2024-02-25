@@ -9,10 +9,12 @@
   :group 'company)
 
 (defcustom company-llama-api-url "http://127.0.0.1:8080/completion"
-  "Llama API base url.")
+  "Llama API completion URL."
+  :type 'float)
 
 (defcustom company-llama-choice-threshold 0.1
-  "Probability threshold for displaying a choice.")
+  "Probability threshold for displaying a choice."
+  :type 'float)
 
 (defun company-llama-fetch (prefix callback)
   "Fetch completion Candidates from Llama based on given PREFIX."
@@ -28,7 +30,7 @@
 		     ))))
     (url-retrieve
      url
-     (lambda (status)
+     (lambda (_status)
        (funcall callback))
      nil t)))
 
@@ -93,7 +95,7 @@
     (- (point) 16384))
    (point)))
 
-(defun company-llama-backend (command &optional arg &rest ignored)
+(defun company-llama-backend (command &optional _arg &rest _ignored)
   "Company Mode backend function for Llama.
 COMMAND and ARG are as per the `company-backends' API."
   (interactive (list 'interactive))
@@ -104,6 +106,4 @@ COMMAND and ARG are as per the `company-backends' API."
 			       (company-llama-candidates callback))))
     (sorted t)))
 
-(add-to-list 'company-backends 'company-llama-backend)
-(setq company-backends (delete 'company-tabnine company-backends))
-
+(provide 'company-llama)
