@@ -123,11 +123,23 @@ other completions."
          (let (kill-buffer-query-functions)
            (kill-buffer buf)))))))
 
+(defvar company-llama--counter 0
+  "A counter for company completion requests.
+
+Used to know when an ongoing (asynchronous) request is
+outdated (and its result will not be useful).")
+
 (defun company-llama--make-url-event-handler (candidates-callback)
   "Return a lambda which accepts events, as invoked by `company-llama--fetch'."
-  (let* ((data-handler (company-llama--make-data-handler candidates-callback))
+  (let* ((counter (cl-incf company-llama--counter))
+         (data-handler (company-llama--make-data-handler candidates-callback))
          last-pos done)
     (lambda (event-type)
+      (when (and (not done)
+                 (not (= counter company-llama--counter)))
+        ;; Obsoleted.
+        (company-llama--disconnect)
+        (setq done t))
       (unless done
         (cl-case event-type
           (change
