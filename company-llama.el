@@ -43,10 +43,10 @@
   "Return a lambda which accepts JSON packets from a streaming completion
 response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
   (let* ((s ""))
-    (lambda (data)
-      ;; (message "Got JSON: %S" data)
-      (if data
-          (let* ((tokens-vec (cdr (assoc 'completion_probabilities data)))
+    (lambda (packet)
+      ;; (message "Got JSON: %S" packet)
+      (if packet
+          (let* ((tokens-vec (cdr (assoc 'completion_probabilities packet)))
 	         (tokens (append tokens-vec nil))
                  done)
             (mapc
@@ -92,7 +92,19 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
         (funcall candidates-callback
                             (if (string-empty-p s)
                                 nil
-                              (list s)))))))
+                              (list s)))
+        nil))))
+
+(defun company-llama--read-one-packet ()
+  "Read one text/event-stream JSON packet at point.
+
+Return nil on failure."
+  (condition-case nil
+      (save-match-data
+        (re-search-forward "data: ")
+        (json-read))
+    (t
+     nil)))
 
 (defun company-llama--make-url-event-handler (candidates-callback)
   "Return a lambda which accepts events, as invoked by `company-llama--fetch'."
@@ -111,21 +123,20 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
            ;; Parse new data.
            (when last-pos
              (save-excursion
-               (save-match-data
+               (goto-char last-pos)
+               (let (packet)
                  (while
-                     (condition-case nil
-                         (progn
-                           (goto-char last-pos)
-                           (re-search-forward "data: ")
-                           (let ((json (json-read)))
-                             (if (funcall data-handler json)
-                                 t
-                               (setq done t)
-                               (interrupt-process)
-                               nil)))
-                       (t
-                        nil))
-                   (setq last-pos (point)))))))
+                     (and
+                      (setq packet (company-llama--read-one-packet))
+                      (setq last-pos (point))
+                      (if (funcall data-handler packet)
+                          ;; OK, keep going
+                          t
+                        ;; data-handler is done, stop
+                        (setq done t)
+                        (when-let ((proc (get-buffer-process (current-buffer))))
+                          (process-send-eof proc))
+                        nil)))))))
           (done
            (funcall data-handler nil)
            (setq done t)))))))
