@@ -7,7 +7,7 @@ Quick setup
 -----------
 
 1. Download a LLM `.llamafile`
-   - For example, [this one](https://huggingface.co/jartine/WizardCoder-Python-34B-V1.0-llamafile/resolve/main/wizardcoder-python-34b-v1.0.Q5_K_M.llamafile?download=true)
+   - For example, [this one](https://huggingface.co/jartine/wizardcoder-13b-python/resolve/main/wizardcoder-python-13b.llamafile?download=true)
    - More [here](https://github.com/jart/emacs-copilot?tab=readme-ov-file#llm-download-links)
 
 2. Run the `.llamafile` on your computer
