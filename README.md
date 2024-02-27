@@ -22,11 +22,9 @@ Recommended configuration
 -------------------------
 
 ```elisp
+;; Keep offering completions after selecting one
 (add-to-list 'company-begin-commands 'company-complete)
 (add-to-list 'company-begin-commands 'company-complete-selection))
-(setq company-idle-delay 0.1)
-(setq company-minimum-prefix-length 2)
-(setq company-require-match nil)
 
 ;; To show probabilities:
 (setq company-tooltip-align-annotations t)
