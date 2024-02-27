@@ -184,6 +184,16 @@ outdated (and its result will not be useful).")
                         (company-llama--disconnect)
                         nil))
 
+                     (`("error" . ((content . "slot unavailable")))
+                      ;; Retry
+                      (run-with-timer
+                       0.1 nil
+                       (lambda ()
+                         (when (= counter company-llama--counter)
+                           (company-llama--candidates candidates-callback))))
+                      (setq done t)
+                      (company-llama--disconnect))
+
                      (`("error" . ((content . ,other-error)))
                       (setq done t)
                       (company-llama--disconnect)
