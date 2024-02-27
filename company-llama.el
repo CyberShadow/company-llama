@@ -135,40 +135,45 @@ outdated (and its result will not be useful).")
          (data-handler (company-llama--make-data-handler candidates-callback))
          last-pos done)
     (lambda (event-type)
-      (when (and (not done)
-                 (not (= counter company-llama--counter)))
-        ;; Obsoleted.
-        (company-llama--disconnect)
-        (setq done t))
-      (unless done
-        (cl-case event-type
-          (change
-           ;; Check if we have headers, and can begin parsing data.
-           (when (and (null last-pos)
-                      (boundp 'url-http-end-of-headers)
-	              url-http-end-of-headers)
-             (setq last-pos url-http-end-of-headers))
 
-           ;; Parse new data.
-           (when last-pos
-             (save-excursion
-               (goto-char last-pos)
-               (let (packet)
-                 (while
-                     (and
-                      (setq packet (company-llama--read-one-packet))
-                      (setq last-pos (point))
-                      (if (funcall data-handler packet)
-                          ;; OK, keep going
-                          t
-                        ;; data-handler is done, stop
-                        (setq done t)
-                        (company-llama--disconnect)
-                        nil)))))))
-          (done
-           (funcall data-handler nil)
-           (company-llama--disconnect)
-           (setq done t)))))))
+      ;; Check if this request is still desired.
+      (unless done
+        (when (not (= counter company-llama--counter))
+          ;; Obsoleted.
+          (company-llama--disconnect)
+          (setq done t)))
+
+      ;; Process new data.
+      (unless done
+        ;; Check if we have headers, and can begin parsing data.
+        (when (and (null last-pos)
+                   (boundp 'url-http-end-of-headers)
+                   url-http-end-of-headers)
+          (setq last-pos url-http-end-of-headers))
+
+        ;; Parse new data.
+        (when last-pos
+          (save-excursion
+            (goto-char last-pos)
+            (let (packet)
+              (while
+                  (and
+                   (setq packet (company-llama--read-one-packet))
+                   (setq last-pos (point))
+                   (if (funcall data-handler packet)
+                       ;; OK, keep going
+                       t
+                     ;; data-handler is done, stop
+                     (setq done t)
+                     (company-llama--disconnect)
+                     nil)))))))
+
+      ;; Process disconnects.
+      (unless done
+        (when (eq event-type 'done)
+          (funcall data-handler nil)
+          (company-llama--disconnect)
+          (setq done t))))))
 
 (defun company-llama--prefix ()
   "Return the prefix (context) used for the completion."
