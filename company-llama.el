@@ -53,7 +53,8 @@
                    (with-current-buffer buf
                      (funcall event-handler 'change)))))))))
     (with-current-buffer buf
-      (add-hook 'after-change-functions after-change-hook nil t))))
+      (add-hook 'after-change-functions after-change-hook nil t)
+      (funcall event-handler 'start))))
 
 (defun company-llama--make-data-handler (candidates-callback)
   "Return a lambda which accepts JSON packets from a streaming completion
@@ -129,6 +130,9 @@ Return nil on failure (incomplete or missing data)."
     (t
      nil)))
 
+(defvar company-llama--active-request nil
+  "The currently running request.")
+
 (defun company-llama--disconnect ()
   "Hack - terminate the url.el HTTP connection.
 
@@ -142,9 +146,12 @@ other completions."
     (run-with-timer
      0 nil
      (lambda ()
-       (with-current-buffer buf
-         (let (kill-buffer-query-functions)
-           (kill-buffer buf)))))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (let (kill-buffer-query-functions)
+             (kill-buffer buf)))))))
+  (when (eq company-llama--active-request (current-buffer))
+    (setq company-llama--active-request nil)))
 
 (defvar company-llama--counter 0
   "A counter for company completion requests.
@@ -154,6 +161,13 @@ outdated (and its result will not be useful).")
 
 (defun company-llama--make-url-event-handler (candidates-callback)
   "Return a lambda which accepts events, as invoked by `company-llama--fetch'."
+
+  ;; Disconnect any other ongoing (now obsolete)
+  ;; request, to free up the GPU ASAP.
+  (when (buffer-live-p company-llama--active-request)
+    (with-current-buffer company-llama--active-request
+      (company-llama--disconnect)))
+
   (let* ((counter (cl-incf company-llama--counter))
          (data-handler (company-llama--make-data-handler candidates-callback))
          last-pos done)
@@ -168,6 +182,8 @@ outdated (and its result will not be useful).")
 
       ;; Process new data.
       (unless done
+        (setq company-llama--active-request (current-buffer))
+
         ;; Check if we have headers, and can begin parsing data.
         (when (and (null last-pos)
                    (boundp 'url-http-end-of-headers)
