@@ -55,10 +55,10 @@
   "Return a lambda which accepts JSON packets from a streaming completion
 response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
   (let* ((s ""))
-    (lambda (packet)
+    (lambda (data)
       ;; (message "Got JSON: %S" packet)
-      (if packet
-          (let* ((tokens-vec (cdr (assoc 'completion_probabilities packet)))
+      (if data
+          (let* ((tokens-vec (cdr (assoc 'completion_probabilities data)))
 	         (tokens (append tokens-vec nil))
                  done)
             (mapc
@@ -108,13 +108,15 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
         nil))))
 
 (defun company-llama--read-one-packet ()
-  "Read one text/event-stream JSON packet at point.
+  "Read one text/event-stream JSON packet at point, as a `(type . json)' CONS cell.
 
-Return nil on failure."
+Return nil on failure (incomplete or missing data)."
   (condition-case nil
       (save-match-data
-        (re-search-forward "data: ")
-        (json-read))
+        (re-search-forward "^\\([^\n:]*\\): ")
+        (cons
+         (match-string 1)
+         (json-read)))
     (t
      nil)))
 
@@ -128,7 +130,7 @@ other completions."
   (when-let ((proc (get-buffer-process (current-buffer))))
     (process-send-eof proc))
   (let ((buf (current-buffer)))
-    (run-with-idle-timer
+    (run-with-timer
      0 nil
      (lambda ()
        (with-current-buffer buf
@@ -172,13 +174,25 @@ outdated (and its result will not be useful).")
                   (and
                    (setq packet (company-llama--read-one-packet))
                    (setq last-pos (point))
-                   (if (funcall data-handler packet)
-                       ;; OK, keep going
-                       t
-                     ;; data-handler is done, stop
-                     (setq done t)
-                     (company-llama--disconnect)
-                     nil)))))))
+                   (pcase packet
+                     (`("data" . ,data)
+                      (if (funcall data-handler data)
+                          ;; OK, keep going
+                          t
+                        ;; data-handler is done, stop
+                        (setq done t)
+                        (company-llama--disconnect)
+                        nil))
+
+                     (`("error" . ((content . ,other-error)))
+                      (setq done t)
+                      (company-llama--disconnect)
+                      (error "llama server error: %s" other-error))
+
+                     (`(,other-type . ,data)
+                      (setq done t)
+                      (company-llama--disconnect)
+                      (error "Unknown packet type from llama server: %s: %S" other-type data)))))))))
 
       ;; Process disconnects.
       (unless done
