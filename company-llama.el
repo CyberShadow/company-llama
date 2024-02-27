@@ -34,8 +34,20 @@
                (lambda (_status)
                  (funcall event-handler 'done))
                nil t))
-         (after-change-hook (lambda (_beg _end _len)
-                              (funcall event-handler 'change))))
+         change-queued
+         (after-change-hook
+          (lambda (_beg _end _len)
+            ;; Call via run-with-timer so that url.el can do the
+            ;; content-encoding handling first.
+            (unless change-queued
+              (setq change-queued t)
+              (run-with-timer
+               0 nil
+               (lambda ()
+                 (setq change-queued nil)
+                 (when (buffer-live-p buf)
+                   (with-current-buffer buf
+                     (funcall event-handler 'change)))))))))
     (with-current-buffer buf
       (add-hook 'after-change-functions after-change-hook nil t))))
 
