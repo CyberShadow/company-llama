@@ -106,6 +106,23 @@ Return nil on failure."
     (t
      nil)))
 
+(defun company-llama--disconnect ()
+  "Hack - terminate the url.el HTTP connection.
+
+url.el does not support this natively, so we are forced to do
+something uncouth here.  Note that disconnecting early from
+llama.cpp is critical, so that its resources are freed up for
+other completions."
+  (when-let ((proc (get-buffer-process (current-buffer))))
+    (process-send-eof proc))
+  (let ((buf (current-buffer)))
+    (run-with-idle-timer
+     0 nil
+     (lambda ()
+       (with-current-buffer buf
+         (let (kill-buffer-query-functions)
+           (kill-buffer buf)))))))
+
 (defun company-llama--make-url-event-handler (candidates-callback)
   "Return a lambda which accepts events, as invoked by `company-llama--fetch'."
   (let* ((data-handler (company-llama--make-data-handler candidates-callback))
@@ -134,11 +151,11 @@ Return nil on failure."
                           t
                         ;; data-handler is done, stop
                         (setq done t)
-                        (when-let ((proc (get-buffer-process (current-buffer))))
-                          (process-send-eof proc))
+                        (company-llama--disconnect)
                         nil)))))))
           (done
            (funcall data-handler nil)
+           (company-llama--disconnect)
            (setq done t)))))))
 
 (defun company-llama--prefix ()
