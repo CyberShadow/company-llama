@@ -71,10 +71,15 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
 			                (cdr (assoc 'prob item))))
 			             probs))
 		      ;; Filter out improbable completions
-		      (probs (seq-filter
+		      (likely-probs (seq-filter
 		              (lambda (prob)
 		                (>= (cdr prob) company-llama-choice-threshold))
-		              probs)))
+		              probs))
+
+                      ;; If all candidates are improbable,
+                      ;; just pick the first one
+                      (probs (or likely-probs
+                                 (list (car probs)))))
 
                  (cond
                   ;; Already returned a result
