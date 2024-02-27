@@ -16,6 +16,10 @@
   "Probability threshold for displaying a choice."
   :type 'float)
 
+(defcustom company-llama-show-probabilities nil
+  "Show probabilities of choices as annotations."
+  :type 'boolean)
+
 (defun company-llama--fetch (prefix event-handler)
   "Fetch completion Candidates from Llama based on given PREFIX."
   (let* ((url company-llama-api-url)
@@ -96,7 +100,8 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
 	                        ;; Report branches as one candidate each.
 	                        (mapcar
 	                         (lambda (prob)
-	                           (car prob))
+                                   (propertize (car prob)
+                                               'llama-probability (cdr prob)))
 	                         probs)
                               ;; Otherwise, just return the common prefix.
                               (list s)))
@@ -229,7 +234,13 @@ outdated (and its result will not be useful).")
    (company-llama--prefix)
    (company-llama--make-url-event-handler candidates-callback)))
 
-(defun company-llama-backend (command &optional _arg &rest _ignored)
+(defun company-llama--annotation (candidate)
+  "Company \"annotation\" command implementation."
+  (let ((probability (get-text-property 0 'llama-probability candidate)))
+    (when (and probability company-llama-show-probabilities)
+      (format "\t\t\t[%.2f%%]" (* 100 probability)))))
+
+(defun company-llama-backend (command &optional arg &rest _ignored)
   "Company Mode backend function for Llama.
 COMMAND and ARG are as per the `company-backends' API."
   (interactive (list 'interactive))
@@ -237,6 +248,7 @@ COMMAND and ARG are as per the `company-backends' API."
     (interactive (company-begin-backend 'company-llama-backend))
     (prefix (cons "" (length (company-llama--prefix))))
     (candidates (cons :async #'company-llama--candidates))
+    (annotation (company-llama--annotation arg))
     (sorted t)))
 
 (provide 'company-llama)
