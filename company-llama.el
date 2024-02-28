@@ -35,6 +35,7 @@
 (require 'company)
 (require 'json)
 (require 'url)
+(require 'url-http)
 
 (defgroup company-llama nil
   "Completion back-end for Llama"
@@ -303,7 +304,7 @@ COMMAND and ARG are as per the `company-backends' API."
   "Ask the llama.cpp server if it is healthy, and return t if so."
   (with-current-buffer
       (url-retrieve-synchronously (concat company-llama-server-url "health"))
-    (= url-http-response-status 200)))
+    (= (url-http-parse-response) 200)))
 
 (provide 'company-llama)
 ;;; company-llama.el ends here
