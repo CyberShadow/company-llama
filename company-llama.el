@@ -299,5 +299,11 @@ COMMAND and ARG are as per the `company-backends' API."
     (annotation (company-llama--annotation arg))
     (sorted t)))
 
+(defun company-llama-healthy-p ()
+  "Ask the llama.cpp server if it is healthy, and return t if so."
+  (with-current-buffer
+      (url-retrieve-synchronously (concat company-llama-server-url "health"))
+    (= url-http-response-status 200)))
+
 (provide 'company-llama)
 ;;; company-llama.el ends here
