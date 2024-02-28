@@ -40,9 +40,9 @@
   "Completion back-end for Llama"
   :group 'company)
 
-(defcustom company-llama-api-url "http://127.0.0.1:8080/completion"
-  "Llama API completion URL."
-  :type 'float)
+(defcustom company-llama-server-url "http://127.0.0.1:8080/"
+  "llama.cpp server URL."
+  :type 'string)
 
 (defcustom company-llama-choice-threshold 0.1
   "Probability threshold for displaying a choice."
@@ -54,7 +54,7 @@
 
 (defun company-llama--fetch (prefix event-handler)
   "Fetch completion Candidates from Llama based on given PREFIX."
-  (let* ((url company-llama-api-url)
+  (let* ((url (concat company-llama-server-url "completion"))
          (url-request-extra-headers
           `(("Content-Type" . "application/json")))
          (url-request-method "POST")
