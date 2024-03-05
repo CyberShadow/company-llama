@@ -60,7 +60,7 @@
           `(("Content-Type" . "application/json")))
          (url-request-method "POST")
          (url-request-data
-          (json-encode `(("prompt" . ,prefix)
+          (json-encode `(("prompt" . ,(encode-coding-string prefix 'utf-8))
                          ("stream" . t)
 		         ("n_probs" . ,(min 10 (round (/ 1.0 company-llama-choice-threshold))))
 		         ("n_predict" . 32)
