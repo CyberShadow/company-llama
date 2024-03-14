@@ -95,8 +95,11 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
   (let* ((s ""))
     (lambda (data)
       (if data
-          (let* ((tokens-vec (cdr (assoc 'completion_probabilities data)))
+          (let* ((content (cdr (assoc 'content data)))
+	         (tokens-vec (cdr (assoc 'completion_probabilities data)))
 	         (tokens (append tokens-vec nil))
+                 ;; An empty content indicates a summary packet
+	         (tokens (if (string-empty-p content) nil tokens))
                  done)
             (mapc
              (lambda (token)
