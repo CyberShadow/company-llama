@@ -177,7 +177,8 @@ something uncouth here.  Note that disconnecting early from
 llama.cpp is critical, so that its resources are freed up for
 other completions."
   (when-let ((proc (get-buffer-process (current-buffer))))
-    (process-send-eof proc))
+    (when (process-live-p proc)
+      (process-send-eof proc)))
   (let ((buf (current-buffer)))
     (run-with-timer
      0 nil
