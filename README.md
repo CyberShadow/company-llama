@@ -1,5 +1,5 @@
-company-llama
-=============
+<img src="https://dump.cy.md/15a494e504531dc9bb8fe85956440c8c/1709105888.283808512.png.jpg" width="120" height="120" align="right">company-llama
+========
 
 Glue between [company-mode](https://github.com/company-mode/company-mode) and [llama.cpp](https://github.com/ggerganov/llama.cpp).
 
