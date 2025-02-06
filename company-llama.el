@@ -104,12 +104,15 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
             (mapc
              (lambda (token)
                (let* (;; Get the probs
-                      (probs (cdr (assoc 'probs token)))
+                      (probs (cdr (or (assoc 'probs token)
+                                      (assoc 'top_logprobs token))))
                       ;; Convert from JSON to a cons cell
                       (probs (mapcar (lambda (item)
 			               (cons
-			                (cdr (assoc 'tok_str item))
-			                (cdr (assoc 'prob item))))
+			                (cdr (or (assoc 'tok_str item)
+                                                 (assoc 'token item)))
+                                        (or (cdr (assoc 'prob item))
+                                            (exp (cdr (assoc 'logprob item))))))
 			             probs))
 		      ;; Filter out improbable completions
 		      (likely-probs (seq-filter
