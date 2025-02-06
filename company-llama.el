@@ -60,17 +60,22 @@
           `(("Content-Type" . "application/json")))
          (url-request-method "POST")
          (url-request-data
-          (json-encode `(("prompt" . ,(encode-coding-string prefix 'utf-8))
-                         ("stream" . t)
-		         ("n_probs" . ,(min 10 (round (/ 1.0 company-llama-choice-threshold))))
-		         ("n_predict" . 32)
-		         ("temperature" . 0)
-		         )))
+          (encode-coding-string
+           (json-encode `(("prompt" . ,prefix)
+                          ("stream" . t)
+		          ("n_probs" . ,(min 10 (round (/ 1.0 company-llama-choice-threshold))))
+		          ("n_predict" . 32)
+		          ("temperature" . 0)
+		          ))
+           'utf-8))
          (buf (url-retrieve
                url
                (lambda (_status)
                  (funcall event-handler 'done))
                nil t))
+         (_
+          (with-current-buffer buf
+            (set-buffer-multibyte t)))
          change-queued
          (after-change-hook
           (lambda (_beg _end _len)
@@ -109,8 +114,10 @@ response.  CANDIDATES-CALLBACK will be called with company-mode candidates."
                       ;; Convert from JSON to a cons cell
                       (probs (mapcar (lambda (item)
 			               (cons
-			                (cdr (or (assoc 'tok_str item)
-                                                 (assoc 'token item)))
+                                        (decode-coding-string
+			                 (cdr (or (assoc 'tok_str item)
+                                                  (assoc 'token item)))
+                                         'utf-8)
                                         (or (cdr (assoc 'prob item))
                                             (exp (cdr (assoc 'logprob item))))))
 			             probs))
