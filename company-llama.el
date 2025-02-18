@@ -283,12 +283,15 @@ outdated (and its result will not be useful).")
           (company-llama--disconnect)
           (setq done t))))))
 
+(defvar company-llama-context-size 65536
+  "Maximum number of characters to send to llama.cpp for context.")
+
 (defun company-llama--prefix ()
   "Return the prefix (context) used for the completion."
   (buffer-substring
    (max
     (point-min)
-    (- (point) 16384))
+    (- (point) company-llama-context-size))
    (point)))
 
 (defun company-llama--candidates (candidates-callback)
